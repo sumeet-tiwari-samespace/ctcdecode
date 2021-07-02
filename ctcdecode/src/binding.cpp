@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <iostream>
+#include <map>
 #include <string>
 #include <vector>
 #include <torch/torch.h>
@@ -43,6 +44,7 @@ int beam_decode(at::Tensor th_probs,
                 size_t blank_id,
                 bool log_input,
                 void *scorer,
+                std::unordered_map<std::string, float> hot_words,
                 at::Tensor th_output,
                 at::Tensor th_timesteps,
                 at::Tensor th_scores,
@@ -110,13 +112,14 @@ int paddle_beam_decode(at::Tensor th_probs,
                        size_t cutoff_top_n,
                        size_t blank_id,
                        int log_input,
+                       std::unordered_map<std::string, float> hot_words,
                        at::Tensor th_output,
                        at::Tensor th_timesteps,
                        at::Tensor th_scores,
                        at::Tensor th_out_length){
 
     return beam_decode(th_probs, th_seq_lens, labels, vocab_size, beam_size, num_processes,
-                cutoff_prob, cutoff_top_n, blank_id, log_input, NULL, th_output, th_timesteps, th_scores, th_out_length);
+                cutoff_prob, cutoff_top_n, blank_id, log_input, NULL, hot_words, th_output, th_timesteps, th_scores, th_out_length);
 }
 
 int paddle_beam_decode_lm(at::Tensor th_probs,
@@ -130,13 +133,14 @@ int paddle_beam_decode_lm(at::Tensor th_probs,
                           size_t blank_id,
                           int log_input,
                           void *scorer,
+                          std::unordered_map<std::string, float> hot_words,
                           at::Tensor th_output,
                           at::Tensor th_timesteps,
                           at::Tensor th_scores,
                           at::Tensor th_out_length){
 
     return beam_decode(th_probs, th_seq_lens, labels, vocab_size, beam_size, num_processes,
-                cutoff_prob, cutoff_top_n, blank_id, log_input, scorer, th_output, th_timesteps, th_scores, th_out_length);
+                cutoff_prob, cutoff_top_n, blank_id, log_input, scorer, hot_words, th_output, th_timesteps, th_scores, th_out_length);
 }
 
 

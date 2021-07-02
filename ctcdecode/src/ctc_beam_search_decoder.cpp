@@ -20,7 +20,8 @@ DecoderState::DecoderState(const std::vector<std::string> &vocabulary,
                            size_t cutoff_top_n,
                            size_t blank_id,
                            int log_input,
-                           Scorer *ext_scorer)
+                           Scorer *ext_scorer,
+                           std::unordered_map<std::string, float> hot_words)
   : abs_time_step(0)
   , beam_size(beam_size)
   , cutoff_prob(cutoff_prob)
@@ -29,6 +30,7 @@ DecoderState::DecoderState(const std::vector<std::string> &vocabulary,
   , log_input(log_input)
   , vocabulary(vocabulary)
   , ext_scorer(ext_scorer)
+  , hot_words(hot_words)
 {
   // assign space id
   auto it = std::find(vocabulary.begin(), vocabulary.end(), " ");
@@ -131,7 +133,21 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
             float score = 0.0;
             std::vector<std::string> ngram;
             ngram = ext_scorer->make_ngram(prefix_to_score);
-            score = ext_scorer->get_log_cond_prob(ngram) * ext_scorer->alpha;
+            float hot_boost = 0.0;
+            if (!hot_words_.empty()) {
+              std::unordered_map<std::string, float>::iterator iter;
+              // increase prob of prefix for every word
+              // that matches a word in the hot-words list
+              for (std::string word : ngram) {
+                iter = hot_words_.find(word);
+                if ( iter != hot_words_.end() ) {
+                  // increase the log_cond_prob(prefix|LM)
+                  hot_boost += iter->second;
+                }
+              }
+            }
+
+            score = (ext_scorer->get_log_cond_prob(ngram) + hot_boost) * ext_scorer->alpha;
             log_p += score;
             log_p += ext_scorer->beta;
           }
@@ -218,10 +234,11 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
     size_t cutoff_top_n,
     size_t blank_id,
     int log_input,
-    Scorer *ext_scorer)
+    Scorer *ext_scorer,
+    std::unordered_map<std::string, float> hot_words)
 {
   DecoderState state(vocabulary, beam_size, cutoff_prob, cutoff_top_n, blank_id,
-                     log_input, ext_scorer);
+                     log_input, ext_scorer, hot_words);
   state.next(probs_seq);
   return state.decode();
 }
@@ -252,7 +269,8 @@ ctc_beam_search_decoder_batch(
     size_t cutoff_top_n,
     size_t blank_id,
     int log_input,
-    Scorer *ext_scorer)
+    Scorer *ext_scorer,
+    std::unordered_map<std::string, float> hot_words)
 {
   VALID_CHECK_GT(num_processes, 0, "num_processes must be nonnegative!");
   // thread pool
@@ -271,7 +289,8 @@ ctc_beam_search_decoder_batch(
                                   cutoff_top_n,
                                   blank_id,
                                   log_input,
-                                  ext_scorer));
+                                  ext_scorer,
+                                  hot_words));
   }
 
 

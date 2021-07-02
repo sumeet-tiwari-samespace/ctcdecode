@@ -4,7 +4,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-
+#include <map>
 #include "scorer.h"
 #include "output.h"
 
@@ -33,7 +33,8 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
     size_t cutoff_top_n = 40,
     size_t blank_id = 0,
     int log_input = 0,
-    Scorer *ext_scorer = nullptr);
+    Scorer *ext_scorer = nullptr,
+    std::unordered_map<std::string, float> hot_words);
 
 
 
@@ -64,7 +65,8 @@ ctc_beam_search_decoder_batch(
     size_t cutoff_top_n = 40,
     size_t blank_id = 0,
     int log_input = 0,
-    Scorer *ext_scorer = nullptr);
+    Scorer *ext_scorer = nullptr,
+    std::unordered_map<std::string, float> hot_words);
 
 
   
@@ -81,6 +83,7 @@ class DecoderState
   int log_input;
   std::vector<std::string> vocabulary;
   Scorer *ext_scorer;
+  std::unordered_map<std::string, float> hot_words;
 
   std::vector<PathTrie*> prefixes;
   PathTrie root;
@@ -103,7 +106,8 @@ public:
                size_t cutoff_top_n,
                size_t blank_id,
                int log_input,
-               Scorer *ext_scorer);
+               Scorer *ext_scorer,
+               std::unordered_map<std::string, float> hot_words);
   ~DecoderState() = default;
 
   /* Process logits in decoder stream

@@ -1,3 +1,4 @@
+#include <map>
 int paddle_beam_decode(THFloatTensor *th_probs,
                        THIntTensor *th_seq_lens,
                        std::vector<std::string> labels,
